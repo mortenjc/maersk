@@ -1,0 +1,9 @@
+services:
+  app:
+    image: almalinux
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
+
+
+# docker-compose up -d
+# docker-compose exec app /bin/bash

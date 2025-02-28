@@ -1,0 +1,60 @@
+
+services:
+  # MongoDB: required for Graylog
+  mongodb:
+    image: mongo:5.0
+    volumes:
+      - mongodb_data:/data/db
+    restart: always
+    networks:
+      - graylog
+
+  # Elasticsearch: required for Graylog
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.10
+    platform: linux/arm64
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "discovery.type=single-node"
+      - "xpack.security.enabled=false"
+    restart: always
+    networks:
+      - graylog
+
+  # Graylog: main application
+  graylog:
+    image: graylog/graylog:5.1
+    platform: linux/arm64
+    volumes:
+      - graylog_data:/usr/share/graylog/data
+      - graylog_journal:/usr/share/graylog/data/journal
+    environment:
+      - GRAYLOG_PASSWORD_SECRET=somepasswordpepper
+      - GRAYLOG_ROOT_PASSWORD_SHA2=8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
+      - GRAYLOG_HTTP_BIND_ADDRESS=0.0.0.0
+      - GRAYLOG_HTTP_EXTERNAL_URI=http://localhost:9000/
+      - GRAYLOG_ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - GRAYLOG_MONGODB_URI=mongodb://mongodb:27017/graylog
+    ports:
+      - "9000:9000"      # Graylog web interface
+      - "12201:12201/udp" # GELF UDP
+      - "1514:1514/udp"   # Syslog UDP
+      - "5140:5140/tcp"   # Syslog TCP
+    depends_on:
+      - mongodb
+      - elasticsearch
+    restart: always
+    networks:
+      - graylog
+
+networks:
+  graylog:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+  es_data:
+  graylog_data:
+  graylog_journal:
